@@ -14,13 +14,13 @@ class Battery
 	float compute_drive(float v, float i);
 	float compute_drive(float v, float i, float drive);
 
-	Battery &setVoltage(float v)
+	Battery &set_voltage(float v)
 	{
 		target_v = v * 1000;
 		return *this;
 	}
 
-	Battery &setCurrent(float i)
+	Battery &set_current(float i)
 	{
 		target_i = i;
 		return *this;
