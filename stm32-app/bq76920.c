@@ -98,16 +98,15 @@ void bq76920_read_cells_v(struct cells *c)
 
 uint8_t bq76920_balance_cells(struct cells *c) {
 	uint8_t bal = 0;
-    uint16_t lowest_cell_v;
 
-	if(c->c0 > BAL_V_MV)
+	if(c->c0 > BAL_V_MV) 
 		bal = 1 << CELL0;
-	if(c->c1 > BAL_V_MV)
-		bal |= 1 << CELL1;
-	if(c->c2 > BAL_V_MV)
-		bal |= 1 << CELL2;
-	if(c->c3 > BAL_V_MV)
-		bal |= 1 << CELL3;
+	if((c->c1 > BAL_V_MV) && (c->c1 > c->c0)) 
+		bal = 1 << CELL1;
+	if((c->c2 > BAL_V_MV) && (c->c2 > c->c1))
+		bal = 1 << CELL2;
+	if((c->c3 > BAL_V_MV) && (c->c3 > c->c2))
+		bal = 1 << CELL3;
 
 	bq76920_write_reg(CELLBAL1, bal);
 	return bal;
