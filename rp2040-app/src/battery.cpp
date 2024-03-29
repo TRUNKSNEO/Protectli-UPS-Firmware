@@ -3,7 +3,8 @@
 #include "battery.h"
 
 Battery::Battery()
-	: bump_amt(0.000001), initial_drive(0.780), _drive(initial_drive)
+	: bump_amt(0.000001), initial_drive(0.780), _drive(initial_drive),
+	  scaling(1)
 {
 }
 
@@ -28,15 +29,14 @@ float Battery::compute_drive(float v, float i)
 	return _drive;
 }
 
-#define I_TSH 200
+#define I_TSH 100
 #define V_TSH 0.2
 
 float Battery::compute_drive(float v, float i, float drive)
 {
-    if ((abs(i-target_i) < I_TSH) || abs(v-target_v) < V_TSH) {
-    // Do nothing
-    }
-	else if (i < target_i && v < target_v) {
+	if ((abs(i - target_i) < I_TSH) || abs(v - target_v) < V_TSH) {
+		// Do nothing
+	} else if (i < target_i && v < target_v) {
 		drive -= bump_amt; // This adds current
 	} else {
 		drive += bump_amt;

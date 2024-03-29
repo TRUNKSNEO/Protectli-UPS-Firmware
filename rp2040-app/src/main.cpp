@@ -111,7 +111,7 @@ void buckboost(void)
 	float drive = 0.8;
 	float vout = 0;
 	char uartbuf[64] = {};
-    bool powered = false;
+	bool powered = false;
 	uint8_t errors = 0;
 	int countdown = 0;
 	Msg msg = {.vout = 0, .vbat = 0};
@@ -199,13 +199,16 @@ void buckboost(void)
 				gpio_pin_set_dt(&pack_boot, false);
 #endif
 			}
-			
+
 			// Reduce charge current near the end of CC
 			// cycle.
-			if(adc.get_vbat() > 16500)
-				battery.setCurrent(300);
-			else
-				battery.setCurrent(1000);
+			if (adc.get_vbat() > 16500) {
+				battery.set_scaling(0.3);
+			} else if (adc.get_vbat() > 16600) {
+				battery.set_scaling(0.1);
+			} else {
+				battery.set_scaling(1);
+			}
 
 			drive = battery.compute_drive(adc.get_vbat(),
 						      adc.get_ibat(), drive);

@@ -2,11 +2,12 @@
 
 class Battery
 {
-	int target_v;   // mV
+	int target_v; // mV
 	float bump_amt;
 	float initial_drive;
 	float _drive;
 	float target_i; // mA
+	float scaling;
 
       public:
 	Battery();
@@ -22,6 +23,12 @@ class Battery
 	Battery &setCurrent(float i)
 	{
 		target_i = i;
+		return *this;
+	}
+
+	Battery &set_scaling(float s)
+	{
+		scaling = s;
 		return *this;
 	}
 };
