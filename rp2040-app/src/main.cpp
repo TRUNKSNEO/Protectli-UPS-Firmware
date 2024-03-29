@@ -108,9 +108,13 @@ enum State {
 void buckboost(void)
 {
 	int ret = 0;
-	float drive;
-	float vout = 0, vbat = 0;
+	float drive = 0.8;
+	float vout = 0;
 	char uartbuf[64] = {};
+    bool powered = false;
+	uint8_t errors = 0;
+	int countdown = 1000;
+
 	Msg msg = {.vout = 0, .vbat = 0};
 
 	printk("~~~ Protectli UPS ~~~\n");
@@ -118,7 +122,7 @@ void buckboost(void)
 	HwErrors hw_errors;
 	Pid buck_pid(12.0, 0.03, 0.0001, 0.0);
 
-	Battery battery = Battery().setVoltage(16.7).setCurrent(800.0);
+	Battery battery = Battery().setVoltage(16.7).setCurrent(1000.0);
 
 	gpio_pin_configure_dt(&pwm_en, GPIO_OUTPUT_INACTIVE);
 	gpio_pin_configure_dt(&pack_boot, GPIO_OUTPUT);
@@ -146,12 +150,13 @@ void buckboost(void)
 	uart_irq_rx_enable(uart_dev);
 
 	state = NONE;
-	int countdown = 1000;
 
 	while (true) {
 		adc.read_all();
+		powered = gpio_pin_get_dt(&vin_detect);
+		errors = hw_errors.check();
+
 		if (!countdown--) {
-			hw_errors.check();
 			countdown = 1000;
 			print_voltages(adc, drive);
 
@@ -165,10 +170,11 @@ void buckboost(void)
 		}
 
 		// Buck State
-		if (!hw_errors.get() && !gpio_pin_get_dt(&vin_detect)) {
+		if (!errors && !powered) {
 			if (state != BUCK) {
 				state = BUCK;
 				printk("Entering Buck State\n");
+				k_sleep(K_MSEC(5U));
 				msg.state = MSG_STATE_DISCHARGING;
 			}
 			vout = adc.get_vout();
@@ -180,10 +186,11 @@ void buckboost(void)
 			pwm_set_dt(&pwm, PERIOD, PERIOD * drive);
 		}
 		// Boost State (Charging)
-		else if (!hw_errors.get() && gpio_pin_get_dt(&vin_detect)) {
+		else if (!errors && powered) {
 			if (state != BOOST) {
 				state = BOOST;
 				printk("Entering Boost State\n");
+				k_sleep(K_MSEC(5U));
 				msg.state = MSG_STATE_CHARGING;
 #if defined(CONFIG_FORCE_PACK)
 				gpio_pin_set_dt(&pack_boot, true);
@@ -193,7 +200,8 @@ void buckboost(void)
 			}
 
 			drive = battery.compute_drive(adc.get_vbat(),
-						      adc.get_ibat());
+						      adc.get_ibat(), drive);
+
 			pwm_set_dt(&pwm, PERIOD, PERIOD * drive);
 			gpio_pin_set_dt(&pwm_en, true);
 		}
@@ -202,12 +210,11 @@ void buckboost(void)
 			if (state != ERROR) {
 				state = ERROR;
 				msg.state = MSG_STATE_ERROR;
-				printk("UPS In Error State: %d\n",
-				       hw_errors.get());
 			}
 			gpio_pin_set_dt(&pwm_en, false);
 			pwm_set_dt(&pwm, PERIOD, 0);
-			k_sleep(K_SECONDS(5U));
+			k_sleep(K_SECONDS(1U));
+            hw_errors.clear();
 			state = NONE;
 		}
 	}

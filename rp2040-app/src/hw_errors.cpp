@@ -23,7 +23,7 @@ static const struct gpio_dt_spec batt_oc =
 static const struct gpio_dt_spec batt_ov =
 	GPIO_DT_SPEC_GET(DT_NODELABEL(batt_overvoltage), gpios);
 
-HwErrors::HwErrors() : last_error_code(0), error_code(0)
+HwErrors::HwErrors() : error_code(0), error_count(100), cur_error_count(0), rst_ctr(1000)
 {
 	gpio_pin_configure_dt(&load_oc_led, GPIO_OUTPUT_INACTIVE);
 	gpio_pin_configure_dt(&batt_oc_led, GPIO_OUTPUT_INACTIVE);
@@ -36,38 +36,49 @@ HwErrors::HwErrors() : last_error_code(0), error_code(0)
 
 uint8_t HwErrors::check(void)
 {
-	memset(&errorCodes, 0x00, sizeof(errorCodes));
-	error_code = 0x00;
+	// Every 1000 calls, if there is no errors zero the error counter
+	// we're looking for errors happening in a row
+	if(!rst_ctr-- && !error_code ) {
+		cur_error_count = 0x00;
+		rst_ctr = 1000;
+	}
 
 	/* Load Overcurrent */
 	if (gpio_pin_get_dt(&load_oc)) {
-		printk("Load Overcurrent! \n");
-		errorCodes.load_oc = true;
-		gpio_pin_set_dt(&load_oc_led, errorCodes.load_oc);
-		error_code |= 1;
+		cur_error_count++;
+		gpio_pin_set_dt(&load_oc_led, true);
+		if(cur_error_count > error_count) {
+			printk("Load Overcurrent! \n");
+			error_code |= (1 << Errors::LOAD_OC);
+		}
 	}
 
 	/* Battery Overcurrent */
 	if (gpio_pin_get_dt(&batt_oc)) {
-		printk("Battery Overcurrent! \n");
-		errorCodes.batt_oc = true;
-		gpio_pin_set_dt(&batt_oc_led, errorCodes.batt_oc);
-		error_code |= 2;
+		cur_error_count++;
+		gpio_pin_set_dt(&batt_oc_led, true);
+		if(cur_error_count > error_count) {
+			printk("Battery Overcurrent! \n");
+			error_code |= (1 << Errors::BATT_OC);
+		}
 	}
 
 	/* Battery Overvoltage */
 	if (gpio_pin_get_dt(&batt_ov)) {
-		printk("Battery Overvoltage! \n");
-		errorCodes.batt_ov = true;
-		gpio_pin_set_dt(&batt_ov_led, errorCodes.batt_ov);
-		error_code |= 4;
+		cur_error_count++;
+		gpio_pin_set_dt(&batt_ov_led, true);
+		if(cur_error_count > error_count) {
+			printk("Battery Overvoltage! \n");
+			error_code |= (1 << Errors::BATT_OV);
+		}
 	}
-
-	if (last_error_code != error_code) {
-		printk("New Errorlevel: %d\n", error_code);
-	}
-
-	last_error_code = error_code;
 
 	return error_code;
+}
+
+
+void HwErrors::clear(void)
+{
+	error_code = 0x00;
+	cur_error_count = 0x00;
 }

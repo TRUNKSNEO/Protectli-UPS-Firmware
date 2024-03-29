@@ -6,11 +6,12 @@ class Battery
 	float target_i; // mA
 	float bump_amt;
 	float initial_drive;
-	float drive;
+	float _drive;
 
       public:
 	Battery();
 	float compute_drive(float v, float i);
+	float compute_drive(float v, float i, float drive);
 
 	Battery &setVoltage(float v)
 	{
