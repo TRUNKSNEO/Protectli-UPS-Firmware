@@ -113,8 +113,7 @@ void buckboost(void)
 	char uartbuf[64] = {};
     bool powered = false;
 	uint8_t errors = 0;
-	int countdown = 1000;
-
+	int countdown = 0;
 	Msg msg = {.vout = 0, .vbat = 0};
 
 	printk("~~~ Protectli UPS ~~~\n");
@@ -150,6 +149,8 @@ void buckboost(void)
 	uart_irq_rx_enable(uart_dev);
 
 	state = NONE;
+
+	k_sleep(K_MSEC(2000U));
 
 	while (true) {
 		adc.read_all();
