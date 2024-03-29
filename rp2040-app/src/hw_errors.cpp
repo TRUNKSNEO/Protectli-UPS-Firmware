@@ -52,6 +52,9 @@ uint8_t HwErrors::check(void)
 			error_code |= (1 << Errors::LOAD_OC);
 		}
 	}
+	else {
+		gpio_pin_set_dt(&load_oc_led, false);
+	}
 
 	/* Battery Overcurrent */
 	if (gpio_pin_get_dt(&batt_oc)) {
@@ -62,6 +65,9 @@ uint8_t HwErrors::check(void)
 			error_code |= (1 << Errors::BATT_OC);
 		}
 	}
+	else {
+		gpio_pin_set_dt(&batt_oc_led, false);
+	}
 
 	/* Battery Overvoltage */
 	if (gpio_pin_get_dt(&batt_ov)) {
@@ -71,6 +77,9 @@ uint8_t HwErrors::check(void)
 			printk("Battery Overvoltage! \n");
 			error_code |= (1 << Errors::BATT_OV);
 		}
+	}
+	else {
+		gpio_pin_set_dt(&batt_ov_led, false);
 	}
 
 	return error_code;

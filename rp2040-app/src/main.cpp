@@ -213,9 +213,7 @@ void buckboost(void)
 				msg.state = MSG_STATE_ERROR;
 			}
 			gpio_pin_set_dt(&pwm_en, false);
-			pwm_set_dt(&pwm, PERIOD, 0);
-			k_sleep(K_SECONDS(1U));
-            hw_errors.clear();
+			hw_errors.clear();
 			state = NONE;
 		}
 	}
