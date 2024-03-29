@@ -17,7 +17,7 @@ class Adc
 	int sample_iout();
 	int sample_ibat();
 
-	void read_all();
+	void sample_all();
 	int get_vout()
 	{
 		return vout;

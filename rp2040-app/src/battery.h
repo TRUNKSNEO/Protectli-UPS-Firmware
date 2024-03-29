@@ -3,10 +3,10 @@
 class Battery
 {
 	int target_v;   // mV
-	float target_i; // mA
 	float bump_amt;
 	float initial_drive;
 	float _drive;
+	float target_i; // mA
 
       public:
 	Battery();

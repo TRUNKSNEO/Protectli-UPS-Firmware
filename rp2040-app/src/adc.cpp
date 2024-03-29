@@ -106,7 +106,7 @@ int Adc::sample_ibat()
 	return ibat;
 }
 
-void Adc::read_all()
+void Adc::sample_all()
 {
 	sample_vout();
 	sample_vbat();

@@ -153,7 +153,7 @@ void buckboost(void)
 	k_sleep(K_MSEC(2000U));
 
 	while (true) {
-		adc.read_all();
+		adc.sample_all();
 		powered = gpio_pin_get_dt(&vin_detect);
 		errors = hw_errors.check();
 
@@ -199,6 +199,13 @@ void buckboost(void)
 				gpio_pin_set_dt(&pack_boot, false);
 #endif
 			}
+			
+			// Reduce charge current near the end of CC
+			// cycle.
+			if(adc.get_vbat() > 16500)
+				battery.setCurrent(300);
+			else
+				battery.setCurrent(1000);
 
 			drive = battery.compute_drive(adc.get_vbat(),
 						      adc.get_ibat(), drive);
