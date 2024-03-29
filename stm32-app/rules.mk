@@ -243,8 +243,8 @@ ifeq ($(BMP_PORT),)
 ifeq ($(OOCD_FILE),)
 %.flash: %.elf
 	@printf "  FLASH   $<\n"
-	(echo "halt; program $(realpath $(*).elf) verify reset" | nc -4 localhost 4444 2>/dev/null) || \
 		$(OOCD) -f interface/$(OOCD_INTERFACE).cfg \
+		-c "transport select swd" \
 		-f target/$(OOCD_TARGET).cfg \
 		-c "reset_config srst_only connect_assert_srst; program $(*).elf verify reset exit"
 else

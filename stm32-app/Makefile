@@ -33,7 +33,7 @@ ARCH_FLAGS	= -mthumb -mcpu=cortex-m0 $(FP_FLAGS)
 # OpenOCD specific variables
 
 OOCD		?= openocd
-OOCD_INTERFACE	?= stlink
+OOCD_INTERFACE	?= jlink
 OOCD_TARGET	?= stm32g0x
 
 ################################################################################
