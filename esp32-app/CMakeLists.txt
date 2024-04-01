@@ -9,4 +9,15 @@ FILE(GLOB app_sources
 )
 
 target_sources(app PRIVATE ${app_sources})
-# target_link_libraries(app PRIVATE common)
+
+set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated/)
+
+foreach(inc_file
+	response.html.bin
+    )
+  generate_inc_file_for_target(
+    app
+    src/${inc_file}
+    ${gen_dir}/${inc_file}.inc
+    )
+endforeach()
