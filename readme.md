@@ -50,3 +50,59 @@ cd stm32-app
 make
 make flash
 ```
+
+## ESP32 Networking
+To connect the ESP32 to a WiFi network start by inserting the USB cable into board, so should see a serial device appear at `/dev/ttyUSBx`, or COMx for Windows. Open a shell here using minicom or otherwise.
+
+``` bash
+# Scan for networks
+
+uart:~$ wifi scan
+Scan requested
+
+Num  | SSID                             (len) | Chan (Band)   | RSSI | Security
+1    | Turnip_WiFi                      11    | 1    (2.4GHz) | -57  | WPA2-PSK
+2    | you-kids-get-off-my-lan          23    | 11   (2.4GHz) | -59  | WPA2-PSK
+3    | hnm-68027                        9     | 1    (2.4GHz) | -73  | WPA2-PSK
+4    | Sunrise_2.4GHz_CF0D50            21    | 1    (2.4GHz) | -88  | WPA2-PSK
+5    | Sunrise_2.4GHz_6CD280            21    | 1    (2.4GHz) | -90  | WPA2-PSK
+6    | Spalenring-Garage                17    | 6    (2.4GHz) | -90  | WPA2-PSK
+7    | DIRECT-48-HP M28 LaserJet        25    | 6    (2.4GHz) | -91  | WPA2-PSK
+
+```
+
+``` bash
+# Connect to network
+uart:~$ wifi connect "you-kids-get-off-my-lan" 4 Password1234
+Connection requested
+Connected
+[00:00:31.616,000] <inf> net_dhcpv4: Received: 192.168.1.109
+
+```
+
+You should be able to ping the device on the network.
+``` bash
+uart:~$ net ping 192.168.1.2
+PING 192.168.1.2
+28 bytes from 192.168.1.2 to 192.168.1.109: icmp_seq=1 ttl=64 time=14 ms
+28 bytes from 192.168.1.2 to 192.168.1.109: icmp_seq=2 ttl=64 time=7 ms
+28 bytes from 192.168.1.2 to 192.168.1.109: icmp_seq=3 ttl=64 time=4 ms
+```
+
+Various other networking things
+``` bash
+uart:~$ net ipv4
+IPv4 support                              : enabled
+IPv4 fragmentation support                : disabled
+Max number of IPv4 network interfaces in the system          : 1
+Max number of unicast IPv4 addresses per network interface   : 1
+Max number of multicast IPv4 addresses per network interface : 1
+
+IPv4 addresses for interface 1 (0x3ffb2708) (Ethernet)
+====================================================
+Type            State           Lifetime (sec)  Address
+DHCP    preferred       192.168.1.109/255.255.255.0
+uart:~$ net arp
+     Interface  Link              Address
+[ 0] 1          A0:B5:49:B3:E5:B0 192.168.1.2
+```
