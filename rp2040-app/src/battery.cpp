@@ -34,9 +34,11 @@ float Battery::compute_drive(float v, float i)
 
 float Battery::compute_drive(float v, float i, float drive)
 {
-	if ((abs(i - target_i) < I_TSH) || abs(v - target_v) < V_TSH) {
+	float tg_i = target_i * scaling;
+
+	if ((abs(i - tg_i) < I_TSH) || abs(v - target_v) < V_TSH) {
 		// Do nothing
-	} else if (i < target_i && v < target_v) {
+	} else if (i < tg_i && v < target_v) {
 		drive -= bump_amt; // This adds current
 	} else {
 		drive += bump_amt;

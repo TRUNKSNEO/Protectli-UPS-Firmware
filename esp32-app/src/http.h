@@ -1,0 +1,13 @@
+#define CONFIG_NET_SAMPLE_NUM_HANDLERS 2 
+#define STACK_SIZE 4096
+#define THREAD_PRIORITY K_PRIO_PREEMPT(8)
+
+#define EVENT_MASK (NET_EVENT_L4_CONNECTED | \
+		    NET_EVENT_L4_DISCONNECTED)
+
+#define MAX_CLIENT_QUEUE CONFIG_NET_SAMPLE_NUM_HANDLERS
+
+#define MY_PORT 80
+
+void net_init(void);
+void start_listener(void);
