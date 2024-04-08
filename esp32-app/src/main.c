@@ -36,12 +36,12 @@ static const char content[] = {
 #define EVENT_MASK (NET_EVENT_L4_CONNECTED | \
 		    NET_EVENT_L4_DISCONNECTED)
 
-
 #define MAX_CLIENT_QUEUE CONFIG_NET_SAMPLE_NUM_HANDLERS
 
 
 K_THREAD_STACK_ARRAY_DEFINE(tcp4_handler_stack, CONFIG_NET_SAMPLE_NUM_HANDLERS,
 			    STACK_SIZE);
+
 static struct k_thread tcp4_handler_thread[CONFIG_NET_SAMPLE_NUM_HANDLERS];
 static k_tid_t tcp4_handler_tid[CONFIG_NET_SAMPLE_NUM_HANDLERS];
 
@@ -53,8 +53,6 @@ static bool running_status;
 static bool want_to_quit;
 static int tcp4_listen_sock;
 static int tcp4_accepted[CONFIG_NET_SAMPLE_NUM_HANDLERS];
-static int tcp6_listen_sock;
-static int tcp6_accepted[CONFIG_NET_SAMPLE_NUM_HANDLERS];
 
 static void process_tcp4(void);
 
@@ -145,28 +143,11 @@ static int setup(int *sock, struct sockaddr *bind_addr,
 {
 	int ret;
 
-#if defined(CONFIG_NET_SOCKETS_SOCKOPT_TLS)
-	*sock = socket(bind_addr->sa_family, SOCK_STREAM, IPPROTO_TLS_1_2);
-#else
 	*sock = socket(bind_addr->sa_family, SOCK_STREAM, IPPROTO_TCP);
-#endif
 	if (*sock < 0) {
 		LOG_ERR("Failed to create TCP socket: %d", errno);
 		return -errno;
 	}
-
-#if defined(CONFIG_NET_SOCKETS_SOCKOPT_TLS)
-	sec_tag_t sec_tag_list[] = {
-		SERVER_CERTIFICATE_TAG,
-	};
-
-	ret = setsockopt(*sock, SOL_TLS, TLS_SEC_TAG_LIST,
-			 sec_tag_list, sizeof(sec_tag_list));
-	if (ret < 0) {
-		LOG_ERR("Failed to set TCP secure option %d", errno);
-		ret = -errno;
-	}
-#endif
 
 	ret = bind(*sock, bind_addr, bind_addrlen);
 	if (ret < 0) {
