@@ -6,6 +6,8 @@
 #include <zephyr/net/net_event.h>
 #include <zephyr/net/conn_mgr.h>
 
+#include <stdio.h>
+
 #include "http.h"
 
 K_THREAD_STACK_ARRAY_DEFINE(tcp4_handler_stack, CONFIG_NET_SAMPLE_NUM_HANDLERS,
@@ -25,11 +27,10 @@ static int tcp4_accepted[CONFIG_NET_SAMPLE_NUM_HANDLERS];
 
 static void process_tcp4(void);
 
-K_THREAD_DEFINE(tcp4_thread_id, STACK_SIZE,
-		process_tcp4, NULL, NULL, NULL,
+K_THREAD_DEFINE(tcp4_thread_id, STACK_SIZE, process_tcp4, NULL, NULL, NULL,
 		THREAD_PRIORITY, 0, -1);
 
-static const char content[] = {
+static const char index_content[] = {
 #include "response.html.bin.inc"
 };
 
@@ -84,8 +85,7 @@ static ssize_t sendall(int sock, const void *buf, size_t len)
 	return 0;
 }
 
-static int setup(int *sock, struct sockaddr *bind_addr,
-		 socklen_t bind_addrlen)
+static int setup(int *sock, struct sockaddr *bind_addr, socklen_t bind_addrlen)
 {
 	int ret;
 
@@ -110,6 +110,46 @@ static int setup(int *sock, struct sockaddr *bind_addr,
 	return ret;
 }
 
+void send_response(int socket, const char *header, const char *content_type,
+		   const char *body)
+{
+	char response[1024];
+	sprintf(response, "%sContent-Type: %s\n\n%s", header, content_type,
+		body);
+	sendall(socket, response, sizeof(response));
+}
+
+void handle_get_request(int client_fd, const char *path)
+{
+	size_t fileSize;
+	if (strcmp(path, "/") == 0) {
+
+		printk("Got / request");
+		send_response(client_fd, "HTTP/1.1 200 OK\n", "text/html",
+			      index_content);
+	} else if (strcmp(path, "/hello") == 0) {
+		send_response(client_fd, "HTTP/1.1 200 OK\n", "text/html",
+			      "<html><body><h1>Hello, World from "
+			      "/hello!</h1></body></html>");
+	} else {
+		send_response(
+			client_fd, "HTTP/1.1 404 Not Found\n", "text/html",
+			"<html><body><h1>404 Not Found</h1></body></html>");
+	}
+}
+
+void handle_post_request(int client_fd, const char *path, const char *body)
+{
+	if (strcmp(path, "/echo") == 0) {
+		send_response(client_fd, "HTTP/1.1 200 OK\n", "text/plain",
+			      body);
+	} else {
+		send_response(
+			client_fd, "HTTP/1.1 404 Not Found\n", "text/html",
+			"<html><body><h1>404 Not Found</h1></body></html>");
+	}
+}
+
 static void client_conn_handler(void *ptr1, void *ptr2, void *ptr3)
 {
 	ARG_UNUSED(ptr1);
@@ -118,30 +158,23 @@ static void client_conn_handler(void *ptr1, void *ptr2, void *ptr3)
 	int client;
 	int received;
 	int ret;
-	char buf[100];
+	char buf[256];
+	char method[16], path[256], *body;
 
 	client = *sock;
+	received = recv(client, buf, sizeof(buf), 0);
+	sscanf(buf, "%s %s", method, path);
 
-	/* Discard HTTP request (or otherwise client will get
-	 * connection reset error).
-	 */
-	do {
-		received = recv(client, buf, sizeof(buf), 0);
-		if (received == 0) {
-			/* Connection closed */
-			printk("[%d] Connection closed by peer", client);
-			break;
-		} else if (received < 0) {
-			/* Socket error */
-			ret = -errno;
-			printk("[%d] Connection error %d", client, ret);
-			break;
-		}
+	if (received == 0) {
+		/* Connection closed */
+		printk("[%d] Connection closed by peer", client);
+	} else if (received < 0) {
+		/* Socket error */
+		ret = -errno;
+		printk("[%d] Connection error %d", client, ret);
+	}
 
-		if (strstr(buf, "\r\n\r\n")) {
-			break;
-		}
-	} while (true);
+	body = strstr(buf, "\r\n\r\n");
 
 	/* We received status from the client */
 	if (strstr(buf, "\r\n\r\nOK")) {
@@ -152,8 +185,15 @@ static void client_conn_handler(void *ptr1, void *ptr2, void *ptr3)
 		running_status = false;
 		want_to_quit = true;
 		k_sem_give(&quit_lock);
+	} else if (strcmp(method, "GET") == 0) {
+		handle_get_request(client, path);
+	} else if (strcmp(method, "POST") == 0) {
+		handle_post_request(client, path, body);
 	} else {
-		(void)sendall(client, content, sizeof(content));
+		send_response(client, "HTTP/1.1 405 Method Not Allowed\n",
+			      "text/html",
+			      "<html><body><h1>405 Method Not "
+			      "Allowed</h1></body></html>");
 	}
 
 	(void)close(client);
@@ -201,26 +241,19 @@ static int process_tcp(int *sock, int *accepted)
 
 	if (client_addr.sin6_family == AF_INET) {
 		tcp4_handler_tid[slot] = k_thread_create(
-			&tcp4_handler_thread[slot],
-			tcp4_handler_stack[slot],
+			&tcp4_handler_thread[slot], tcp4_handler_stack[slot],
 			K_THREAD_STACK_SIZEOF(tcp4_handler_stack[slot]),
 			(k_thread_entry_t)client_conn_handler,
-			INT_TO_POINTER(slot),
-			&accepted[slot],
-			&tcp4_handler_tid[slot],
-			THREAD_PRIORITY,
-			0, K_NO_WAIT);
+			INT_TO_POINTER(slot), &accepted[slot],
+			&tcp4_handler_tid[slot], THREAD_PRIORITY, 0, K_NO_WAIT);
 	}
 
 	char addr_str[INET6_ADDRSTRLEN];
 
-	net_addr_ntop(client_addr.sin6_family,
-		      &client_addr.sin6_addr,
-		      addr_str, sizeof(addr_str));
+	net_addr_ntop(client_addr.sin6_family, &client_addr.sin6_addr, addr_str,
+		      sizeof(addr_str));
 
-	printk("[%d] Connection #%d from %s",
-		client, ++counter,
-		addr_str);
+	printk("[%d] Connection #%d from %s", client, ++counter, addr_str);
 
 	return 0;
 }
@@ -240,8 +273,8 @@ static void process_tcp4(void)
 		return;
 	}
 
-	printk("Waiting for IPv4 HTTP connections on port %d, sock %d",
-		MY_PORT, tcp4_listen_sock);
+	printk("Waiting for IPv4 HTTP connections on port %d, sock %d", MY_PORT,
+	       tcp4_listen_sock);
 
 	while (ret == 0 || !want_to_quit) {
 		ret = process_tcp(&tcp4_listen_sock, tcp4_accepted);
@@ -265,10 +298,11 @@ void start_listener(void)
 	}
 }
 
-void net_init(void) {
+void net_init(void)
+{
 	if (IS_ENABLED(CONFIG_NET_CONNECTION_MANAGER)) {
-		net_mgmt_init_event_callback(&mgmt_cb,
-					     event_handler, EVENT_MASK);
+		net_mgmt_init_event_callback(&mgmt_cb, event_handler,
+					     EVENT_MASK);
 		net_mgmt_add_event_callback(&mgmt_cb);
 
 		conn_mgr_resend_status();
