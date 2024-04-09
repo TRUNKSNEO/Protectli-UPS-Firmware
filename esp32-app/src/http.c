@@ -138,13 +138,6 @@ static void client_conn_handler(void *ptr1, void *ptr2, void *ptr3)
 			break;
 		}
 
-		/* Note that something like this strstr() check should *NOT*
-		 * be used in production code. This is done like this just
-		 * for this sample application to keep things simple.
-		 *
-		 * We are assuming here that the full HTTP request is received
-		 * in one TCP segment which in real life might not.
-		 */
 		if (strstr(buf, "\r\n\r\n")) {
 			break;
 		}
