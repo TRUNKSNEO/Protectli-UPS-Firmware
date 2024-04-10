@@ -23,7 +23,7 @@ west build -b pl02_rp2040 rp2040-app --build-dir build/rp2040
 Once you have built the application you can flash it by running:
 
 ```shell
-west flash --esp-device /dev/ttyUSB0 --build-dir build/esp32
+west flash --esp-device /dev/tty.usbserial-0001 --build-dir build/esp32
 west flash --runner jlink --build-dir build/rp2040
 ```
 

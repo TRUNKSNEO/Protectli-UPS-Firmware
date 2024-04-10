@@ -116,7 +116,7 @@ int main(void)
 	start_listener();
 	// k_sem_take(&quit_lock, K_FOREVER);
 
-	printk("Init Complete");
+	printk("Init Complete\n");
 	while (1) {
 		gpio_pin_toggle_dt(&led);
 		k_sleep(K_MSEC(100U));

@@ -1,0 +1,26 @@
+HTTP/1.0 200 OK
+Content-Type: text/html; charset=utf-8
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HTMX Example</title>
+    <!-- Import htmx -->
+    <script src="https://unpkg.com/htmx.org"></script>
+</head>
+
+<body>
+    <h2>HTMX Input Display</h2>
+
+    <!-- Input form -->
+    <form hx-post="/submit" hx-target="#display-area" hx-swap="outerHTML">
+        <input type="text" name="inputValue" placeholder="Enter something..." required>
+        <button type="submit">Submit</button>
+    </form>
+
+	<div hx-get="/hello">Get Some HTML</div>
+
+</body>
+</html>
+

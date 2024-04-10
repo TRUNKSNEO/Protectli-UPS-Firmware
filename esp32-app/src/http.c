@@ -31,7 +31,7 @@ K_THREAD_DEFINE(tcp4_thread_id, STACK_SIZE, process_tcp4, NULL, NULL, NULL,
 		THREAD_PRIORITY, 0, -1);
 
 static const char index_content[] = {
-#include "response.html.bin.inc"
+#include "index.html.bin.inc"
 };
 
 static void event_handler(struct net_mgmt_event_callback *cb,
@@ -47,7 +47,7 @@ static void event_handler(struct net_mgmt_event_callback *cb,
 	}
 
 	if (mgmt_event == NET_EVENT_L4_CONNECTED) {
-		printk("Network connected");
+		printk("Network connected\n");
 
 		connected = true;
 		k_sem_give(&run_app);
@@ -114,19 +114,23 @@ void send_response(int socket, const char *header, const char *content_type,
 		   const char *body)
 {
 	char response[1024];
-	sprintf(response, "%sContent-Type: %s\n\n%s", header, content_type,
+
+	int len = sprintf(response, "%sContent-Type: %s\n\n%s", header, content_type,
 		body);
-	sendall(socket, response, sizeof(response));
+
+	if(len) {
+		sendall(socket, response, len);
+	} else {
+		printk("sprintf Returned: %d", len);
+	}
 }
 
 void handle_get_request(int client_fd, const char *path)
 {
 	size_t fileSize;
 	if (strcmp(path, "/") == 0) {
-
 		printk("Got / request");
-		send_response(client_fd, "HTTP/1.1 200 OK\n", "text/html",
-			      index_content);
+		sendall(client_fd, index_content, sizeof(index_content));
 	} else if (strcmp(path, "/hello") == 0) {
 		send_response(client_fd, "HTTP/1.1 200 OK\n", "text/html",
 			      "<html><body><h1>Hello, World from "
@@ -140,7 +144,8 @@ void handle_get_request(int client_fd, const char *path)
 
 void handle_post_request(int client_fd, const char *path, const char *body)
 {
-	if (strcmp(path, "/echo") == 0) {
+	if (strcmp(path, "/submit") == 0) {
+		printk("Got /submit POST: %s", body);
 		send_response(client_fd, "HTTP/1.1 200 OK\n", "text/plain",
 			      body);
 	} else {
@@ -225,6 +230,7 @@ static int process_tcp(int *sock, int *accepted)
 
 	client = accept(*sock, (struct sockaddr *)&client_addr,
 			&client_addr_len);
+
 	if (client < 0) {
 		printk("Error in accept %d, stopping server", -errno);
 		return -errno;
@@ -273,7 +279,7 @@ static void process_tcp4(void)
 		return;
 	}
 
-	printk("Waiting for IPv4 HTTP connections on port %d, sock %d", MY_PORT,
+	printk("Waiting for IPv4 HTTP connections on port %d, sock %d\n", MY_PORT,
 	       tcp4_listen_sock);
 
 	while (ret == 0 || !want_to_quit) {
