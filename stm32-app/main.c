@@ -70,7 +70,7 @@ static void gpio_setup(void)
 			PIN_LED1 | PIN_LED2);
 
 	// Shutdown buttons
-	gpio_mode_setup(GPIOA, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, GPIO13);
+	gpio_mode_setup(GPIOA, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, GPIO0);
 
 	// allert
 	gpio_mode_setup(GPIOB, GPIO_MODE_INPUT, GPIO_PUPD_NONE, GPIO8);
@@ -188,7 +188,7 @@ int main(void)
 			uart_out(buf);
 		}
 
-		if(!gpio_get(GPIOA, GPIO13)) {
+		if(!gpio_get(GPIOA, GPIO0)) {
 			sprintf(buf, "Shutting down\n\r");
 			uart_out(buf);
 			bq76920_shutdown();
