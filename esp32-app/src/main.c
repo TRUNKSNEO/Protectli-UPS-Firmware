@@ -95,6 +95,7 @@ int main(void)
 
 	gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);
 	gpio_pin_configure_dt(&relay1, GPIO_OUTPUT_ACTIVE);
+	gpio_pin_configure_dt(&relay2, GPIO_OUTPUT_ACTIVE);
 
 	if (!device_is_ready(uart_dev)) {
 		printk("UART device not found!");
