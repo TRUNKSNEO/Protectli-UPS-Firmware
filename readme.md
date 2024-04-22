@@ -27,6 +27,8 @@ west flash --esp-device /dev/tty.usbserial-0001 --build-dir build/esp32
 west flash --runner jlink --build-dir build/rp2040
 ```
 
+If flashing doesn't work on the ESP32, you might need to reduce the baud rate. Append `--esp-baud-rate 460800` to the end of the flash command.
+
 ```shell
 # If you don't have a jlink (programmer). You can use this.
 sudo picotool load build/rp2040/zephyr/zephyr.elf
