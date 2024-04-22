@@ -60,9 +60,7 @@ static int rx_buf_pos;
 /*
  * Read characters from UART until line end is detected. Afterwards push the
  * data to the message queue.
- */
-void serial_cb(const struct device *dev, void *user_data)
-{
+ */ void serial_cb(const struct device *dev, void *user_data) {
 	uint8_t c;
 
 	if (!uart_irq_update(uart_dev)) {
@@ -136,6 +134,7 @@ void buckboost(void)
 	k_sleep(K_MSEC(1000));
 
 	Adc adc;
+	adc.sample_all();
 	print_voltages(adc, 0.00);
 
 	if (!device_is_ready(pwm.dev)) {
