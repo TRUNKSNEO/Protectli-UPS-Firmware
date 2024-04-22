@@ -115,10 +115,10 @@ void send_response(int socket, const char *header, const char *content_type,
 {
 	char response[1024];
 
-	int len = sprintf(response, "%sContent-Type: %s\n\n%s", header, content_type,
-		body);
+	int len = sprintf(response, "%sContent-Type: %s\n\n%s", header,
+			  content_type, body);
 
-	if(len) {
+	if (len) {
 		sendall(socket, response, len);
 	} else {
 		printk("sprintf Returned: %d", len);
@@ -279,8 +279,8 @@ static void process_tcp4(void)
 		return;
 	}
 
-	printk("Waiting for IPv4 HTTP connections on port %d, sock %d\n", MY_PORT,
-	       tcp4_listen_sock);
+	printk("Waiting for IPv4 HTTP connections on port %d, sock %d\n",
+	       MY_PORT, tcp4_listen_sock);
 
 	while (ret == 0 || !want_to_quit) {
 		ret = process_tcp(&tcp4_listen_sock, tcp4_accepted);

@@ -57,10 +57,15 @@ void print_voltages(Adc adc, float drive)
 static char rx_buf[MSG_SIZE];
 static int rx_buf_pos;
 
+struct k_msgq msgq;
+char msgq_buffer[sizeof(struct Msg) * 2];
+
 /*
  * Read characters from UART until line end is detected. Afterwards push the
  * data to the message queue.
- */ void serial_cb(const struct device *dev, void *user_data) {
+ */
+void serial_cb(const struct device *dev, void *user_data)
+{
 	uint8_t c;
 
 	if (!uart_irq_update(uart_dev)) {
@@ -71,21 +76,18 @@ static int rx_buf_pos;
 		return;
 	}
 
-	/* read until FIFO empty */
 	while (uart_fifo_read(uart_dev, &c, 1) == 1) {
-		if ((c == '\n' || c == '\r') && rx_buf_pos > 0) {
-			/* terminate string */
-			rx_buf[rx_buf_pos] = '\0';
-
-			/* if queue is full, message is silently dropped */
-			k_msgq_put(&uart_msgq, &rx_buf, K_NO_WAIT);
-
-			/* reset the buffer (it was copied to the msgq) */
+		if (!c && rx_buf_pos > sizeof(struct Msg)) {
+			// We have a complete packet
+			struct Msg msg = {};
+			msg_cobs_decode(rx_buf, &msg);
+			while (k_msgq_put(&msgq, &msg, K_NO_WAIT) != 0) {
+				k_msgq_purge(&msgq);
+			}
 			rx_buf_pos = 0;
-		} else if (rx_buf_pos < (sizeof(rx_buf) - 1)) {
+		} else if (c) {
 			rx_buf[rx_buf_pos++] = c;
 		}
-		/* else: characters beyond buffer size are dropped */
 	}
 }
 
@@ -112,16 +114,16 @@ void buckboost(void)
 	bool powered = false;
 	uint8_t errors = 0;
 	int countdown = 0;
-	Msg msg = {.vout = 0, .vbat = 0};
+	Msg msg_out = {.vout = 0, .vbat = 0};
+	Msg msg_in = {0};
 
+	k_msgq_init(&msgq, msgq_buffer, sizeof(struct Msg), 2);
 	printk("~~~ Protectli UPS ~~~\n");
 
 	HwErrors hw_errors;
 	Pid buck_pid(12.0, 0.03, 0.0001, 0.0);
 
-	Battery battery = Battery()
-		.set_voltage(16.8)
-		.set_current(1000.0);
+	Battery battery = Battery().set_voltage(16.8).set_current(1000.0);
 
 	gpio_pin_configure_dt(&pwm_en, GPIO_OUTPUT_INACTIVE);
 	gpio_pin_configure_dt(&pack_boot, GPIO_OUTPUT);
@@ -162,13 +164,21 @@ void buckboost(void)
 			countdown = 1000;
 			print_voltages(adc, drive);
 
-			msg.vout = adc.get_vout();
-			msg.vbat = adc.get_vbat();
-			msg.iout = adc.get_iout();
-			msg.ibat = adc.get_ibat();
-			msg.gas = (adc.get_vbat() - 12000) / 48;
-			ret = msg_cobs_encode(msg, uartbuf);
+			msg_out.vout = adc.get_vout();
+			msg_out.vbat = adc.get_vbat();
+			msg_out.iout = adc.get_iout();
+			msg_out.ibat = adc.get_ibat();
+			msg_out.gas = (adc.get_vbat() - 12000) / 48;
+			ret = msg_cobs_encode(msg_out, uartbuf);
 			print_uart(uartbuf, ret);
+
+			ret = k_msgq_get(&msgq, &msg_in, K_MSEC(10));
+			if (ret != 0) {
+				if (msg_in.power_dwn) {
+					printk("Power Down Requested\n");
+					msg_in.power_dwn = false;
+				}
+			}
 		}
 
 		// Buck State
@@ -177,7 +187,7 @@ void buckboost(void)
 				state = BUCK;
 				printk("Entering Buck State\n");
 				k_sleep(K_MSEC(5U));
-				msg.state = MSG_STATE_DISCHARGING;
+				msg_out.state = MSG_STATE_DISCHARGING;
 			}
 			vout = adc.get_vout();
 			vout = vout / 1000;
@@ -193,7 +203,7 @@ void buckboost(void)
 				state = BOOST;
 				printk("Entering Boost State\n");
 				k_sleep(K_MSEC(5U));
-				msg.state = MSG_STATE_CHARGING;
+				msg_out.state = MSG_STATE_CHARGING;
 #if defined(CONFIG_FORCE_PACK)
 				gpio_pin_set_dt(&pack_boot, true);
 				k_sleep(K_MSEC(100U));
@@ -221,7 +231,7 @@ void buckboost(void)
 		else {
 			if (state != ERROR) {
 				state = ERROR;
-				msg.state = MSG_STATE_ERROR;
+				msg_out.state = MSG_STATE_ERROR;
 			}
 			gpio_pin_set_dt(&pwm_en, false);
 			hw_errors.clear();

@@ -13,6 +13,7 @@ struct Msg {
 	uint16_t gas;
 	uint8_t state;
 	uint8_t pad;
+	uint8_t power_dwn;
 };
 
 uint16_t msg_cobs_encode(struct Msg msg, char *buf);

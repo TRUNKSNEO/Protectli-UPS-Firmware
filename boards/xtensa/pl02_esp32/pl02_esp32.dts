@@ -19,6 +19,14 @@
         };
     };
 
+    buttons {
+        compatible = "gpio-keys";
+        button: button_0 {
+            gpios = <&gpio0 13 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        };
+    };
+
+
     relays {
         compatible = "gpio-leds";
         relay1: relay_1 {

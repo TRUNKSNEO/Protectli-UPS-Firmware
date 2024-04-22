@@ -21,6 +21,9 @@ static struct k_poll_signal spi_slave_done_sig =
 static const struct gpio_dt_spec led =
 	GPIO_DT_SPEC_GET(DT_NODELABEL(led0), gpios);
 
+static const struct gpio_dt_spec pb =
+	GPIO_DT_SPEC_GET(DT_NODELABEL(button), gpios);
+
 static const struct gpio_dt_spec relay1 =
 	GPIO_DT_SPEC_GET(DT_NODELABEL(relay1), gpios);
 
@@ -39,6 +42,13 @@ char msgq_buffer[sizeof(struct Msg) * 2];
 
 K_THREAD_STACK_DEFINE(screen_thd_stack_area, SCREEN_THD_STACK_SIZE);
 struct k_thread screen_thd_data;
+
+void print_uart(char *buf, uint8_t msg_len)
+{
+	for (int i = 0; i < msg_len; i++) {
+		uart_poll_out(uart_dev, buf[i]);
+	}
+}
 
 /*
  * Read characters from UART until line end is detected. Afterwards push the
@@ -71,19 +81,12 @@ void serial_cb(const struct device *dev, void *user_data)
 	}
 }
 
-void print_uart(char *buf)
-{
-	int msg_len = strlen(buf);
-
-	for (int i = 0; i < msg_len; i++) {
-		uart_poll_out(uart_dev, buf[i]);
-	}
-}
-
 int main(void)
 {
 	int ret;
 	char tx_buf[MSG_SIZE];
+	char uartbuf[64] = {};
+	struct Msg msg;
 
 	printf("Starting Up!\n");
 
@@ -93,7 +96,8 @@ int main(void)
 
 	k_msgq_init(&msgq, msgq_buffer, sizeof(struct Msg), 2);
 
-	gpio_pin_configure_dt(&led, GPIO_OUTPUT_INACTIVE);
+	gpio_pin_configure_dt(&pb, GPIO_INPUT);
+	gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
 	gpio_pin_configure_dt(&relay1, GPIO_OUTPUT_ACTIVE);
 	gpio_pin_configure_dt(&relay2, GPIO_OUTPUT_ACTIVE);
 
@@ -113,14 +117,28 @@ int main(void)
 		K_THREAD_STACK_SIZEOF(screen_thd_stack_area), screen_thread,
 		NULL, NULL, NULL, SCREEN_THD_PRIORITY, 0, K_NO_WAIT);
 
-	net_init();
-	start_listener();
+	// net_init();
+	// start_listener();
 	// k_sem_take(&quit_lock, K_FOREVER);
 
 	printk("Init Complete\n");
+	int pwr_dwn = 10;
 	while (1) {
-		gpio_pin_toggle_dt(&led);
+		if (gpio_pin_get_dt(&pb)) {
+			if (!pwr_dwn--) {
+				printk("Power Down Requested");
+				memset(&msg, 0x00, sizeof(msg));
+				msg.power_dwn = true;
+				ret = msg_cobs_encode(msg, uartbuf);
+				print_uart(uartbuf, ret);
+				pwr_dwn = 10;
+			} else {
+				msg.power_dwn = true;
+			}
+		}
+
 		k_sleep(K_MSEC(100U));
+		gpio_pin_toggle_dt(&led);
 	}
 	return 0;
 }
