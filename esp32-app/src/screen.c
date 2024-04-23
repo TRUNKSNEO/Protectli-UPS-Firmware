@@ -12,7 +12,21 @@
 
 const struct device *display;
 char buf[256] = {};
-extern struct k_msgq msgq;
+
+extern struct k_msgq uart_msgq;
+extern uint8_t pb_re;
+
+// This should be hacked to allow more states
+int inc_state(int state)
+{
+	if (state == VBAT) {
+		state++;
+	} else if (state == VOUT) {
+		state = VBAT;
+	}
+
+	return state;
+};
 
 int screen_init(void)
 {
@@ -164,6 +178,7 @@ void screen_draw_vbat(struct Msg msg)
 void screen_thread(void *, void *, void *)
 {
 	int ret = 0;
+	int delay_loops = DELAY_LOOPS;
 	enum screen_state state = INTRO;
 	screen_draw_intro();
 	k_sleep(K_MSEC(5000U));
@@ -171,19 +186,23 @@ void screen_thread(void *, void *, void *)
 
 	while (true) {
 		struct Msg msg = {};
-		ret = k_msgq_get(&msgq, &msg, K_MSEC(1000));
+		ret = k_msgq_get(&uart_msgq, &msg, K_MSEC(1000));
 
-		if (ret != 0) {
-			screen_draw_error();
-			k_sleep(K_MSEC(5000U));
-		} else if (state == VBAT) {
-			screen_draw_vbat(msg);
-			k_sleep(K_MSEC(3000U));
-			state = VOUT;
-		} else if (state == VOUT) {
-			screen_draw_vout(msg);
-			k_sleep(K_MSEC(3000U));
-			state = VBAT;
+		if (pb_re) {
+			state = inc_state(state);
+		}
+
+		if (!delay_loops-- || pb_re) {
+			pb_re = false;
+			delay_loops = DELAY_LOOPS;
+
+			if (ret != 0) {
+				screen_draw_error();
+			} else if (state == VBAT) {
+				screen_draw_vbat(msg);
+			} else if (state == VOUT) {
+				screen_draw_vout(msg);
+			}
 		}
 	}
 }

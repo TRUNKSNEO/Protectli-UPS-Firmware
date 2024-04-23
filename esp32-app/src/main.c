@@ -37,11 +37,10 @@ static const struct device *const uart_dev =
 static char rx_buf[MSG_SIZE];
 static int rx_buf_pos = 0;
 
-struct k_msgq msgq;
-char msgq_buffer[sizeof(struct Msg) * 2];
-
 K_THREAD_STACK_DEFINE(screen_thd_stack_area, SCREEN_THD_STACK_SIZE);
 struct k_thread screen_thd_data;
+
+uint8_t pb_re = false;
 
 void print_uart(char *buf, uint8_t msg_len)
 {
@@ -71,8 +70,8 @@ void serial_cb(const struct device *dev, void *user_data)
 			// We have a complete packet
 			struct Msg msg = {};
 			msg_cobs_decode(rx_buf, &msg);
-			while (k_msgq_put(&msgq, &msg, K_NO_WAIT) != 0) {
-				k_msgq_purge(&msgq);
+			while (k_msgq_put(&uart_msgq, &msg, K_NO_WAIT) != 0) {
+				k_msgq_purge(&uart_msgq);
 			}
 			rx_buf_pos = 0;
 		} else if (c) {
@@ -93,8 +92,6 @@ int main(void)
 	if (!gpio_is_ready_dt(&led)) {
 		return 0;
 	}
-
-	k_msgq_init(&msgq, msgq_buffer, sizeof(struct Msg), 2);
 
 	gpio_pin_configure_dt(&pb, GPIO_INPUT);
 	gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
@@ -123,6 +120,7 @@ int main(void)
 
 	printk("Init Complete\n");
 	int pwr_dwn = 10;
+	bool prev_pb_state = gpio_pin_get_dt(&pb);
 	while (1) {
 		if (gpio_pin_get_dt(&pb)) {
 			if (!pwr_dwn--) {
@@ -132,13 +130,20 @@ int main(void)
 				ret = msg_cobs_encode(msg, uartbuf);
 				print_uart(uartbuf, ret);
 				pwr_dwn = 10;
-			} else {
-				msg.power_dwn = true;
 			}
 		}
 
+		if (gpio_pin_get_dt(&pb) && (prev_pb_state == false)) {
+			// Rising Edge
+			prev_pb_state = gpio_pin_get_dt(&pb);
+			pb_re = true;
+			gpio_pin_toggle_dt(&led);
+		} else if (!gpio_pin_get_dt(&pb) && (prev_pb_state == true)) {
+			// Falling Edge
+			prev_pb_state = gpio_pin_get_dt(&pb);
+		}
+
 		k_sleep(K_MSEC(100U));
-		gpio_pin_toggle_dt(&led);
 	}
 	return 0;
 }
