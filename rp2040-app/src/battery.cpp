@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "battery.h"
+#include "csd97395.h"
 
 Battery::Battery()
 	: bump_amt(0.000001), initial_drive(0.780), _drive(initial_drive),
@@ -17,12 +18,12 @@ float Battery::compute_drive(float v, float i)
 		_drive += bump_amt;
 	}
 
-	if (_drive >= 0.85) {
-		_drive = 0.85;
+	if (_drive >= MAX_DRIVE) {
+		_drive = MAX_DRIVE;
 	}
 
 	// If the drive have dipped below this amount, something has happened.
-	if (_drive <= 0.65) {
+	if (_drive <= MIN_DRIVE) {
 		_drive = initial_drive;
 	}
 
@@ -44,12 +45,12 @@ float Battery::compute_drive(float v, float i, float drive)
 		drive += bump_amt;
 	}
 
-	if (drive >= 0.85) {
-		drive = 0.85;
+	if (drive >= MAX_DRIVE) {
+		drive = MAX_DRIVE;
 	}
 
 	// If the drive have dipped below this amount, something has happened.
-	if (drive <= 0.65) {
+	if (drive <= MIN_DRIVE) {
 		drive = initial_drive;
 	}
 

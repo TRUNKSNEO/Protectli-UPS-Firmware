@@ -1,4 +1,3 @@
-#define MAX_DRIVE             1.0
 #define INTEGRATOR_WINDUP_NEG (-100)
 #define INTEGRATOR_WINDUP_POS (1000000)
 

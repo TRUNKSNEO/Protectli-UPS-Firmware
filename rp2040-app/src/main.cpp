@@ -197,6 +197,7 @@ void buckboost(void)
 			gpio_pin_set_dt(&pwm_en, true);
 			pwm_set_dt(&pwm, PERIOD, PERIOD * drive);
 		}
+
 		// Boost State (Charging)
 		else if (!errors && powered) {
 			if (state != BOOST) {

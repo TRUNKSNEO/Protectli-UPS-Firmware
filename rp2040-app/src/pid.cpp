@@ -1,5 +1,6 @@
 #include <zephyr/kernel.h>
 #include "pid.h"
+#include "csd97395.h"
 
 Pid::Pid(float target, float kp, float ki, float kd)
 	: target(target), kp(kp), ki(ki), kd(kd), e_sum(0)
@@ -32,8 +33,8 @@ float Pid::compute(float actual)
 
 	drive = (e * kp) + (e_sum * ki) + (derivatave * kd);
 
-	if (drive >= 0.90) {
-		drive = 0.90;
+	if (drive >= MAX_DRIVE) {
+		drive = MAX_DRIVE;
 	}
 
 	if (drive <= 0.02) {
