@@ -1,5 +1,7 @@
 #include "uart.h"
 
+static bool shutdown = false;
+
 void uart1_out(char *data)
 {
 	while (*data) {
@@ -25,8 +27,24 @@ void usart1_setup(int baud)
 	usart_enable(USART1);
 }
 
+bool uart_get_shutdown(void) {
+    return shutdown;
+}
+
+void usart2_isr(void)
+{
+	static uint8_t data = 'A';
+    data = usart_recv(USART2);
+
+    if(data == 0x00) {
+        shutdown = true;
+    }
+}
+
 void usart2_setup(int baud)
 {
+	nvic_enable_irq(NVIC_USART2_LPUART2_IRQ);
+
 	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO3);
 	gpio_set_af(GPIOA, GPIO_AF1, GPIO3);
 
@@ -37,6 +55,8 @@ void usart2_setup(int baud)
 	usart_set_stopbits(USART2, USART_CR2_STOPBITS_1);
 	usart_set_mode(USART2, USART_MODE_RX);
 	usart_set_flow_control(USART2, USART_FLOWCONTROL_NONE);
+
+	usart_enable_rx_interrupt(USART2);
 
 	/* Finally enable the USART. */
 	usart_enable(USART2);

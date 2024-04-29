@@ -165,7 +165,7 @@ int main(void)
 			uart1_out(buf);
 		}
 
-		if(!gpio_get(GPIOA, GPIO0)) {
+		if(!gpio_get(GPIOA, GPIO0) || uart_get_shutdown()) {
 			sprintf(buf, "Shutting down\n\r");
 			uart1_out(buf);
 			bq76920_shutdown();
