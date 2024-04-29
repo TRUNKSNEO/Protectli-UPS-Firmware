@@ -1,11 +1,11 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
-#include <libopencm3/stm32/usart.h>
 #include <libopencm3/stm32/i2c.h>
 #include <libopencm3/stm32/syscfg.h>
+#include <libopencm3/stm32/usart.h>
 
 #include "printf.h"
-
+#include "uart.h"
 #include "bq76920.h"
 
 #define PORT_LED GPIOA
@@ -26,24 +26,6 @@ static void clock_setup(void)
 	rcc_periph_clock_enable(RCC_SYSCFG);
 	rcc_periph_clock_enable(RCC_USART1);
 	rcc_periph_clock_enable(RCC_I2C1);
-}
-
-static void usart_setup(void)
-{
-	SYSCFG_CFGR1 |= SYSCFG_CFGR1_PA11_RMP;
-	gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO9);
-	gpio_set_af(GPIOA, GPIO_AF1, GPIO9);
-
-	/* Setup USART parameters. */
-	usart_set_baudrate(USART1, 115200);
-	usart_set_databits(USART1, 8);
-	usart_set_parity(USART1, USART_PARITY_NONE);
-	usart_set_stopbits(USART1, USART_CR2_STOPBITS_1);
-	usart_set_mode(USART1, USART_MODE_TX);
-	usart_set_flow_control(USART1, USART_FLOWCONTROL_NONE);
-
-	/* Finally enable the USART. */
-	usart_enable(USART1);
 }
 
 static void i2c_setup(void)
@@ -132,7 +114,7 @@ int main(void)
 	delay(1e6);
 	gpio_clear(PORT_LED, PIN_LED1);
 
-	usart_setup();
+	usart1_setup();
 	i2c_setup();
 
 	sprintf(buf, "Starting BMS\r\n");
