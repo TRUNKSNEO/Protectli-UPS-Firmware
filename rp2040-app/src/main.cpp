@@ -137,7 +137,6 @@ void buckboost(void)
 
 	Adc adc;
 	adc.sample_all();
-	print_voltages(adc, 0.00);
 
 	if (!device_is_ready(pwm.dev)) {
 		printk("Error: PWM device %s is not ready\n", pwm.dev->name);
@@ -153,7 +152,9 @@ void buckboost(void)
 
 	state = NONE;
 
-	k_sleep(K_MSEC(2000U));
+	adc.sample_all();
+	drive = (float)adc.get_vout() / (float)adc.get_vbat(); 
+	printk("Initial Drive: %f, %d, %d!\n", drive, adc.get_vout(), adc.get_vbat());
 
 	while (true) {
 		adc.sample_all();
@@ -175,7 +176,7 @@ void buckboost(void)
 			ret = k_msgq_get(&msgq, &msg_in, K_MSEC(10));
 			if (ret != 0) {
 				if (msg_in.power_dwn) {
-					printk("Power Down Requested\n");
+					printk("Power Down Requested\n\x03");
 					msg_in.power_dwn = false;
 				}
 			}
@@ -233,6 +234,7 @@ void buckboost(void)
 			if (state != ERROR) {
 				state = ERROR;
 				msg_out.state = MSG_STATE_ERROR;
+				printk("Entering Error State\n");
 			}
 			gpio_pin_set_dt(&pwm_en, false);
 			hw_errors.clear();
