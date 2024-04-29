@@ -176,7 +176,7 @@ void buckboost(void)
 			ret = k_msgq_get(&msgq, &msg_in, K_MSEC(10));
 			if (ret != 0) {
 				if (msg_in.power_dwn) {
-					printk("Power Down Requested\n\x03");
+					printk("Power Down Requested @ \n");
 					msg_in.power_dwn = false;
 				}
 			}

@@ -27,18 +27,21 @@ void usart1_setup(int baud)
 	usart_enable(USART1);
 }
 
-bool uart_get_shutdown(void) {
-    return shutdown;
+bool uart_get_shutdown(void)
+{
+	return shutdown;
 }
 
-void usart2_isr(void)
+void usart2_lpuart2_isr(void)
 {
-	static uint8_t data = 'A';
-    data = usart_recv(USART2);
+	static uint8_t data = 0x00;
+	data = usart_recv(USART2);
+	usart_send(USART1, data);
 
-    if(data == 0x00) {
-        shutdown = true;
-    }
+	// @ is the special shutdown char
+	if (data == '@') {
+		shutdown = true;
+	}
 }
 
 void usart2_setup(int baud)

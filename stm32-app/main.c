@@ -25,6 +25,7 @@ static void clock_setup(void)
 	rcc_periph_clock_enable(RCC_GPIOB);
 	rcc_periph_clock_enable(RCC_SYSCFG);
 	rcc_periph_clock_enable(RCC_USART1);
+	rcc_periph_clock_enable(RCC_USART2);
 	rcc_periph_clock_enable(RCC_I2C1);
 }
 
@@ -109,7 +110,7 @@ int main(void)
 	gpio_clear(PORT_LED, PIN_LED1);
 
 	usart1_setup(115200);
-	usart2_setup(115200);
+	usart2_setup(9600);
 	i2c_setup();
 
 	sprintf(buf, "Starting BMS\r\n");
