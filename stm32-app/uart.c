@@ -36,7 +36,7 @@ void usart2_lpuart2_isr(void)
 {
 	static uint8_t data = 0x00;
 	data = usart_recv(USART2);
-	usart_send(USART1, data);
+	// usart_send(USART1, data);
 
 	// @ is the special shutdown char
 	if (data == '@') {
