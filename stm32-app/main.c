@@ -58,12 +58,6 @@ static void gpio_setup(void)
 	gpio_mode_setup(GPIOB, GPIO_MODE_INPUT, GPIO_PUPD_NONE, GPIO8);
 }
 
-void uart_out(char *data)
-{
-	while (*data) {
-		usart_send_blocking(USART1, *data++);
-	}
-}
 
 void delay(int t)
 {
@@ -114,11 +108,12 @@ int main(void)
 	delay(1e6);
 	gpio_clear(PORT_LED, PIN_LED1);
 
-	usart1_setup();
+	usart1_setup(115200);
+	usart2_setup(115200);
 	i2c_setup();
 
 	sprintf(buf, "Starting BMS\r\n");
-	uart_out(buf);
+	uart1_out(buf);
 
 	// Set CC_CFG to 0x19 as per the datasheet
 	bq76920_write_reg(CC_CFG, 0x19);
@@ -138,41 +133,41 @@ int main(void)
 		bq76920_read_cells_v(&c);
 		uint8_t bal = bq76920_balance_cells(&c);
 		sprintf(buf, "C0: %dmV C1: %dmV C2: %dmV C3: %dmV | Balance: %d\n\r",c.c0, c.c1, c.c2, c.c3, bal);
-		uart_out(buf);
+		uart1_out(buf);
 
 		ret = check_faults(&fault_counter);
 		if (ret) {
 			if (ret & SYS_STAT_OCD) {
 				sprintf(buf, "Fault: SYS_STAT_OCD\n\r");
-				uart_out(buf);
+				uart1_out(buf);
 			}
 			if (ret & SYS_STAT_SCD) {
 				sprintf(buf, "Fault: SYS_STAT_SCD\n\r");
-				uart_out(buf);
+				uart1_out(buf);
 			}
 			if (ret & SYS_STAT_OV) {
 				sprintf(buf, "Fault: SYS_STAT_OV\n\r");
-				uart_out(buf);
+				uart1_out(buf);
 			}
 			if (ret & SYS_STAT_UV) {
 				sprintf(buf, "Fault: SYS_STAT_UV\n\r");
-				uart_out(buf);
+				uart1_out(buf);
 			}
 			if (ret & SYS_STAT_OVRD_ALERT) {
 				sprintf(buf, "Fault: SYS_STAT_OVRD_ALERT\n\r");
-				uart_out(buf);
+				uart1_out(buf);
 			}
 			if (ret & SYS_STAT_DEVICE_XREADY) {
 				sprintf(buf, "Fault: SYS_STAT_DEVICE_XREADY\n\r");
-				uart_out(buf);
+				uart1_out(buf);
 			}
 			sprintf(buf, "Fault Counter: %d\n\r", fault_counter);
-			uart_out(buf);
+			uart1_out(buf);
 		}
 
 		if(!gpio_get(GPIOA, GPIO0)) {
 			sprintf(buf, "Shutting down\n\r");
-			uart_out(buf);
+			uart1_out(buf);
 			bq76920_shutdown();
 		}
 		gpio_toggle(PORT_LED, PIN_LED2);
