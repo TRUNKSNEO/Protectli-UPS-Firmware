@@ -151,11 +151,6 @@ void buckboost(void)
 	uart_irq_rx_enable(uart_dev);
 
 	state = NONE;
-
-	adc.sample_all();
-	drive = (float)adc.get_vout() / (float)adc.get_vbat(); 
-	printk("Initial Drive: %f, %d, %d!\n", drive, adc.get_vout(), adc.get_vbat());
-
 	while (true) {
 		adc.sample_all();
 		powered = gpio_pin_get_dt(&vin_detect);
@@ -169,13 +164,18 @@ void buckboost(void)
 			msg_out.vbat = adc.get_vbat();
 			msg_out.iout = adc.get_iout();
 			msg_out.ibat = adc.get_ibat();
-			msg_out.gas = (adc.get_vbat() - 12000) / 48;
+			if (adc.get_vbat() < 12000) {
+				msg_out.gas = 0;
+			} else {
+				msg_out.gas = (adc.get_vbat() - 12000) / 48;
+			}
+
 			ret = msg_cobs_encode(msg_out, uartbuf);
 			print_uart(uartbuf, ret);
 
 			ret = k_msgq_get(&msgq, &msg_in, K_MSEC(10));
 			if (ret != 0) {
-				if (msg_in.power_dwn) {
+				if (msg_in.power_dwn && !powered) {
 					printk("Power Down Requested @ \n");
 					msg_in.power_dwn = false;
 				}
@@ -202,6 +202,7 @@ void buckboost(void)
 		// Boost State (Charging)
 		else if (!errors && powered) {
 			if (state != BOOST) {
+				drive = 1.0;
 				state = BOOST;
 				printk("Entering Boost State\n");
 				k_sleep(K_MSEC(5U));
