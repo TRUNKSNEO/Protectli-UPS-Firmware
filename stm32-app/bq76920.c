@@ -27,7 +27,15 @@ void bq76920_set_uv(int voltage_mv)
 {
 	uint16_t uv_trip =
 		(((voltage_mv - adc_offset) * 1000 / adc_gain) >> 4) & 0x00FF;
-	uv_trip += 1;
+
+	// Since both the adc_offset and adc_gain values
+	// come from the chip itself and are laser trimmed
+	// values, they are different for each chip.
+	// This means there is a possibility for a rollover here
+	// make sure to check for that.
+	if (uv_trip < 200) {
+		uv_trip = 255;
+	}
 
 	bq76920_write_reg(UV_TRIP, uv_trip);
 }
@@ -53,16 +61,14 @@ void bq76920_init()
 	adc_gain = 365 + (((bq76920_read_reg(ADCGAIN1) & 0b00001100) << 1) |
 			  ((bq76920_read_reg(ADCGAIN2) & 0b11100000) >> 5));
 
-	bq76920_set_uv(UV_MV);                           // V / Cell
-	bq76920_set_ov(OV_MV);                           // V / Cell
+	bq76920_set_uv(UV_MV);                          // V / Cell
+	bq76920_set_ov(OV_MV);                          // V / Cell
 	bq76920_write_reg(SYS_CTRL1, SYS_CTRL1_ADC_EN); // ADC_EN = 1
 
 	bq76920_write_reg(CELLBAL1, 0x00);
 	bq76920_write_reg(PROTECT1, PROTECT1_SCD_T1);
 	// PROTECT2 Left at default settings (8A Over Current)
 }
-
-
 
 void bq76920_clear_faults(void)
 {
@@ -96,17 +102,22 @@ void bq76920_read_cells_v(struct cells *c)
 	c->c3 = bq76920_read_cell_v(CELL3);
 }
 
-uint8_t bq76920_balance_cells(struct cells *c) {
+uint8_t bq76920_balance_cells(struct cells *c)
+{
 	uint8_t bal = 0;
 
-	if(c->c0 > BAL_V_MV) 
+	if (c->c0 > BAL_V_MV) {
 		bal = 1 << CELL0;
-	if((c->c1 > BAL_V_MV) && (c->c1 > c->c0)) 
+	}
+	if ((c->c1 > BAL_V_MV) && (c->c1 > c->c0)) {
 		bal = 1 << CELL1;
-	if((c->c2 > BAL_V_MV) && (c->c2 > c->c1))
+	}
+	if ((c->c2 > BAL_V_MV) && (c->c2 > c->c1)) {
 		bal = 1 << CELL2;
-	if((c->c3 > BAL_V_MV) && (c->c3 > c->c2))
+	}
+	if ((c->c3 > BAL_V_MV) && (c->c3 > c->c2)) {
 		bal = 1 << CELL3;
+	}
 
 	bq76920_write_reg(CELLBAL1, bal);
 	return bal;
