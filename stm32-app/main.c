@@ -59,7 +59,6 @@ static void gpio_setup(void)
 	gpio_mode_setup(GPIOB, GPIO_MODE_INPUT, GPIO_PUPD_NONE, GPIO8);
 }
 
-
 void delay(int t)
 {
 	for (int i = 0; i < t; i++) {
@@ -133,7 +132,9 @@ int main(void)
 	while (1) {
 		bq76920_read_cells_v(&c);
 		uint8_t bal = bq76920_balance_cells(&c);
-		sprintf(buf, "C0: %dmV C1: %dmV C2: %dmV C3: %dmV | Balance: %d\n\r",c.c0, c.c1, c.c2, c.c3, bal);
+		sprintf(buf,
+			"C0: %dmV C1: %dmV C2: %dmV C3: %dmV | Balance: %d\n\r",
+			c.c0, c.c1, c.c2, c.c3, bal);
 		uart1_out(buf);
 
 		ret = check_faults(&fault_counter);
@@ -159,14 +160,15 @@ int main(void)
 				uart1_out(buf);
 			}
 			if (ret & SYS_STAT_DEVICE_XREADY) {
-				sprintf(buf, "Fault: SYS_STAT_DEVICE_XREADY\n\r");
+				sprintf(buf,
+					"Fault: SYS_STAT_DEVICE_XREADY\n\r");
 				uart1_out(buf);
 			}
 			sprintf(buf, "Fault Counter: %d\n\r", fault_counter);
 			uart1_out(buf);
 		}
 
-		if(!gpio_get(GPIOA, GPIO0) || uart_get_shutdown()) {
+		if (!gpio_get(GPIOA, GPIO0) || uart_get_shutdown()) {
 			sprintf(buf, "Shutting down\n\r");
 			uart1_out(buf);
 			bq76920_shutdown();
