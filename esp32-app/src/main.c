@@ -13,6 +13,11 @@
 
 #define MSG_SIZE 32
 
+#define LOOP_SLEEP_MS 100U
+#define PB_HOLD_PD_MS 1000U
+#define PWR_DWN_INIT (PB_HOLD_PD_MS / LOOP_SLEEP_MS)
+
+
 K_MSGQ_DEFINE(uart_msgq, MSG_SIZE, 10, 4);
 
 static struct k_poll_signal spi_slave_done_sig =
@@ -119,7 +124,7 @@ int main(void)
 	// k_sem_take(&quit_lock, K_FOREVER);
 
 	printk("Init Complete\n");
-	int pwr_dwn = 10;
+	int pwr_dwn = PWR_DWN_INIT;
 	bool prev_pb_state = gpio_pin_get_dt(&pb);
 	while (1) {
 		if (gpio_pin_get_dt(&pb)) {
@@ -129,8 +134,11 @@ int main(void)
 				msg.power_dwn = true;
 				ret = msg_cobs_encode(msg, uartbuf);
 				print_uart(uartbuf, ret);
-				pwr_dwn = 10;
+				pwr_dwn = PWR_DWN_INIT;
 			}
+		}
+		else {
+			pwr_dwn = PWR_DWN_INIT;
 		}
 
 		if (gpio_pin_get_dt(&pb) && (prev_pb_state == false)) {
