@@ -16,7 +16,7 @@ west update
 The application can be built by running:
 
 ```shell
-west build -b pl02_esp32 esp32-app --build-dir build/esp32
+west build -b esp32_devkitc_wroom esp32-app --build-dir build/esp32
 west build -b pl02_rp2040 rp2040-app --build-dir build/rp2040
 ```
 

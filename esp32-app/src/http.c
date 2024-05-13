@@ -4,7 +4,7 @@
 
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/net/net_event.h>
-#include <zephyr/net/conn_mgr.h>
+// #include <zephyr/net/conn_mgr.h>
 
 #include <stdio.h>
 
