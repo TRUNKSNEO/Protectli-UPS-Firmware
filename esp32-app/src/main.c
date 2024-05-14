@@ -92,7 +92,7 @@ int main(void)
 	char uartbuf[64] = {};
 	struct Msg msg;
 
-	printf("Starting Up!\n");
+	printk("Starting Up!\n");
 
 	if (!gpio_is_ready_dt(&led)) {
 		return 0;
