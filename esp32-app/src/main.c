@@ -92,7 +92,7 @@ int main(void)
 	char uartbuf[64] = {};
 	struct Msg msg;
 
-	printf("Starting Up!\n");
+	printk("Starting Up!\n");
 
 	if (!gpio_is_ready_dt(&led)) {
 		return 0;
@@ -119,8 +119,8 @@ int main(void)
 		K_THREAD_STACK_SIZEOF(screen_thd_stack_area), screen_thread,
 		NULL, NULL, NULL, SCREEN_THD_PRIORITY, 0, K_NO_WAIT);
 
-	// net_init();
-	// start_listener();
+	net_init();
+	start_listener();
 	// k_sem_take(&quit_lock, K_FOREVER);
 
 	printk("Init Complete\n");

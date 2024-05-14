@@ -16,7 +16,7 @@ west update
 The application can be built by running:
 
 ```shell
-west build -b pl02_esp32 esp32-app --build-dir build/esp32
+west build -b esp32_devkitc_wroom esp32-app --build-dir build/esp32
 west build -b pl02_rp2040 rp2040-app --build-dir build/rp2040
 ```
 
@@ -75,7 +75,7 @@ Num  | SSID                             (len) | Chan (Band)   | RSSI | Security
 
 ``` bash
 # Connect to network
-uart:~$ wifi connect "you-kids-get-off-my-lan" 4 Password1234
+uart:~$ wifi connect "you-kids-get-off-my-lan" 1 Password1234
 Connection requested
 Connected
 [00:00:31.616,000] <inf> net_dhcpv4: Received: 192.168.1.109

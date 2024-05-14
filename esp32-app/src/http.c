@@ -4,7 +4,7 @@
 
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/net/net_event.h>
-#include <zephyr/net/conn_mgr.h>
+#include <zephyr/net/conn_mgr_monitor.h>
 
 #include <stdio.h>
 
@@ -311,11 +311,12 @@ void net_init(void)
 					     EVENT_MASK);
 		net_mgmt_add_event_callback(&mgmt_cb);
 
-		conn_mgr_resend_status();
+		conn_mgr_mon_resend_status();
+
 	}
 
 	/* Wait for the connection. */
-	k_sem_take(&run_app, K_FOREVER);
+	// k_sem_take(&run_app, K_FOREVER);
 	/* I think this might block waiting for net
 	we probably do _not_ want this */
 }
