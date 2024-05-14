@@ -75,7 +75,7 @@ Num  | SSID                             (len) | Chan (Band)   | RSSI | Security
 
 ``` bash
 # Connect to network
-uart:~$ wifi connect "you-kids-get-off-my-lan" 4 Password1234
+uart:~$ wifi connect "you-kids-get-off-my-lan" 1 Password1234
 Connection requested
 Connected
 [00:00:31.616,000] <inf> net_dhcpv4: Received: 192.168.1.109
